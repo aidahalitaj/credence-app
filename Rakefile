@@ -19,6 +19,11 @@ task :console => :print_env do
   sh 'pry -r ./specs/test_load_all'
 end
 
+desc 'Run application in development mode and port'
+task :run_dev do
+  sh 'rerun -c "rackup -p 9292"'
+end
+
 desc 'Rake all the Ruby'
 task :rubocop do
   `rubopcop **/*.rb`

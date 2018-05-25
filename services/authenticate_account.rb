@@ -16,6 +16,7 @@ module Credence
                            json: { username: username, password: password })
 
       raise(UnauthorizedError) unless response.code == 200
+
       response.parse
     end
   end

@@ -13,7 +13,7 @@ module Credence
     plugin :flash
 
     route do |routing|
-      @current_account = SecureSession.new(session).get(:current_account)
+      @current_user = Session.new(SecureSession.new(session)).get_user
 
       routing.public
       routing.assets
@@ -21,7 +21,7 @@ module Credence
 
       # GET /
       routing.root do
-        view 'home', locals: { current_account: @current_account }
+        view 'home', locals: { current_user: @current_user }
       end
     end
   end

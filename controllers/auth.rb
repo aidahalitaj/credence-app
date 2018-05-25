@@ -15,15 +15,19 @@ module Credence
 
         # POST /auth/login
         routing.post do
-          logged_in_account = AuthenticateAccount.new(App.config).call(
+          authenticated = AuthenticateAccount.new(App.config).call(
             JsonRequestBody.symbolize(routing.params)
           )
 
-          # session[:current_account] = account
-          SecureSession.new(session).set(:current_account, logged_in_account)
-          flash[:notice] = "Welcome back #{logged_in_account['username']}!"
+          current_user = User.new(authenticated['account'],
+                                  authenticated['auth_token'])
+
+          Session.new(SecureSession.new(session)).set_user(current_user)
+          flash[:notice] = "Welcome back #{current_user.username}!"
           routing.redirect '/'
-        rescue StandardError
+        rescue StandardError => error
+          puts "ERROR: #{error.inspect}"
+          puts error.backtrace
           flash[:error] = 'Username and password did not match our records'
           routing.redirect @login_route
         end
@@ -31,29 +35,38 @@ module Credence
 
       routing.is 'logout' do
         routing.get do
-          # session[:current_account] = nil
-          SecureSession.new(session).delete(:current_account)
+          Session.new(SecureSession.new(session)).delete
           routing.redirect @login_route
         end
       end
 
       @register_route = '/auth/register'
-      routing.is 'register' do
-        routing.get do
-          view :register
+      routing.on 'register' do
+        routing.is do
+          routing.get do
+            view :register
+          end
+
+          routing.post do
+            account_data = JsonRequestBody.symbolize(routing.params)
+            VerifyRegistration.new(App.config).call(account_data)
+
+            flash[:notice] = 'Please check your email for a verification link'
+            routing.redirect '/'
+          rescue StandardError => error
+            puts "ERROR CREATING ACCOUNT: #{error.inspect}"
+            puts error.backtrace
+            flash[:error] = 'Account details are not valid: please check username and email'
+            routing.redirect @register_route
+          end
         end
 
-        routing.post do
-          account_data = JsonRequestBody.symbolize(routing.params)
-          CreateAccount.new(App.config).call(account_data)
-
-          flash[:notice] = 'Please login with your new account information'
-          routing.redirect '/auth/login'
-        rescue StandardError => error
-          puts "ERROR CREATING ACCOUNT: #{error.inspect}"
-          puts error.backtrace
-          flash[:error] = 'Could not create account'
-          routing.redirect @register_route
+        routing.get(String) do |registration_token|
+          flash.now[:notice] = 'Email Verified! Please choose a new password'
+          new_account = SecureMessage.decrypt(registration_token)
+          view :register_confirm,
+               locals: { new_account: new_account,
+                         registration_token: registration_token }
         end
       end
     end

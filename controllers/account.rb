@@ -17,10 +17,17 @@ module Credence
           end
         end
 
+        # POST /account/[registration_token] -- finishes registration process
         routing.post String do |registration_token|
-          raise 'Passwords do not match or empty' if
-            routing.params['password'].empty? ||
-            routing.params['password'] != routing.params['password_confirm']
+          # raise 'Passwords do not match or empty' if
+          #   routing.params['password'].empty? ||
+          #   routing.params['password'] != routing.params['password_confirm']
+
+          passwords = Form::Passwords.call(routing.params)
+          if passwords.failure?
+            flash[:error] = Form.message_values(passwords)
+            routing.redirect "/account/#{registration_token}"
+          end
 
           new_account = SecureMessage.decrypt(registration_token)
           CreateAccount.new(App.config).call(

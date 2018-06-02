@@ -3,7 +3,7 @@
 module Credence
   # Behaviors of the currently logged in account
   class User
-    def initialize(account, auth_token)
+    def initialize(account, auth_token = nil)
       @account = account
       @auth_token = auth_token
     end
@@ -19,7 +19,7 @@ module Credence
     end
 
     def logged_out?
-      @account.nil?
+      @auth_token.nil?
     end
 
     def logged_in?

@@ -1,6 +1,7 @@
 div class="row" style="vertical-align: bottom;"
   div class="col-xs-9"
-    h3 All Projects
+    h3 
+      = "#{current_user.username} : Projects"
   div class="col-xs-3"
 table class="table"
   thead
@@ -11,6 +12,6 @@ table class="table"
     - projects.all.each do |proj|
       tr
         td 
-          a href="/account/projects/#{proj.id}" #{proj.name}
+          a href="/projects/#{proj.id}" #{proj.name}
           td 
             a href="#{proj.repo_url}" #{proj.repo_url}

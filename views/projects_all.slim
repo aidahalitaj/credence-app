@@ -3,6 +3,7 @@ div class="row" style="vertical-align: bottom;"
     h3 
       = "#{current_user.username} : Projects"
   div class="col-xs-3"
+    button type="button" class="btn btn-success" data-toggle="modal" data-target="#newProjectModal" + New Project
 table class="table"
   thead
     tr
@@ -15,3 +16,5 @@ table class="table"
           a href="/projects/#{proj.id}" #{proj.name}
           td 
             a href="#{proj.repo_url}" #{proj.repo_url}
+
+include :project_new_partial

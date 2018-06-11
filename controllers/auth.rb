@@ -7,10 +7,43 @@ module Credence
   class App < Roda
     route('auth') do |routing| # rubocop:disable Metrics/BlockLength
       @login_route = '/auth/login'
+      @oauth_callback = '/auth/sso_callback'
+
+      def gh_oauth_url(config)
+        url = config.GH_OAUTH_URL
+        client_id = config.GH_CLIENT_ID
+        scope = config.GH_SCOPE
+
+        "#{url}?client_id=#{client_id}&scope=#{scope}"
+      end
+
+      routing.is 'sso_callback' do
+        # GET /auth/sso_callback
+        routing.get do
+          sso_account = AuthenticateGithubAccount
+                        .new(App.config)
+                        .call(routing.params['code'])
+
+          current_user = User.new(sso_account['account'],
+                                  sso_account['auth_token'])
+
+          Session.new(SecureSession.new(session)).set_user(current_user)
+          flash[:notice] = "Welcome #{current_user.username}!"
+          routing.redirect '/projects'
+        rescue StandardError => error
+          puts error.inspect
+          puts error.backtrace
+          flash[:error] = 'Could not sign in using Github'
+          routing.redirect @login_route
+        end
+      end
+
       routing.is 'login' do
         # GET /auth/login
         routing.get do
-          view :login
+          view :login, locals: {
+            gh_oauth_url: gh_oauth_url(App.config)
+          }
         end
 
         # POST /auth/login
